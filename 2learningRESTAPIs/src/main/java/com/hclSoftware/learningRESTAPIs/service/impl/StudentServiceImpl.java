@@ -7,6 +7,7 @@ import com.hclSoftware.learningRESTAPIs.repository.StudentRepository;
 import com.hclSoftware.learningRESTAPIs.service.StudentService;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.sql.Array;
@@ -18,6 +19,7 @@ import java.util.Map;
 //@RequiredArgsConstructor
 public class StudentServiceImpl implements StudentService {
 
+    /*
     private final StudentRepository studentRepository;
     private final ModelMapper modelMapper;
 
@@ -26,6 +28,14 @@ public class StudentServiceImpl implements StudentService {
         this.studentRepository = studentRepository;
         this.modelMapper = modelMapper;
     }
+     */
+
+    // Alternate of this is:
+    @Autowired
+    private StudentRepository studentRepository;
+
+    @Autowired
+    private ModelMapper modelMapper;
 
     @Override
     public List<StudentDto> getAllStudents() {

@@ -4,9 +4,11 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 
+//@Data
 @Entity
 @Getter
 @Setter
@@ -23,6 +25,7 @@ public class Student {
         return id;
     }
 
+    /*
     public void setName(String value) {
         name = value;
     }
@@ -30,4 +33,5 @@ public class Student {
     public void setEmail(String value) {
         email = value;
     }
+     */
 }

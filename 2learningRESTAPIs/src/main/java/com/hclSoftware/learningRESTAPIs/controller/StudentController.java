@@ -2,7 +2,12 @@ package com.hclSoftware.learningRESTAPIs.controller;
 
 import com.hclSoftware.learningRESTAPIs.dto.AddStudentRequestDto;
 import com.hclSoftware.learningRESTAPIs.dto.StudentDto;
+import com.hclSoftware.learningRESTAPIs.repository.StudentRepository;
 import com.hclSoftware.learningRESTAPIs.service.StudentService;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,11 +20,16 @@ import java.util.Objects;
 //@RequestMapping("/student")   // if all routes in this start with /student/
 public class StudentController {
 
+    @Autowired
+    public StudentService studentService;
+
+    /*
     private final StudentService studentService;
 
     public StudentController(StudentService studentService) {
         this.studentService = studentService;
     }
+    */
 
     @GetMapping("/students")
     public ResponseEntity<List<StudentDto>> getAllStudents(){
@@ -44,7 +54,7 @@ public class StudentController {
     }
 
     @PutMapping("/student/{id}")
-    public ResponseEntity<StudentDto> updateStudent(@PathVariable Long id, @RequestBody AddStudentRequestDto addStudentRequestDto){
+    public ResponseEntity<StudentDto> updateStudent(@PathVariable Long id, @RequestBody @Valid AddStudentRequestDto addStudentRequestDto){
         return ResponseEntity.status(HttpStatus.OK).body(studentService.updateStudent(id, addStudentRequestDto));
     }
 

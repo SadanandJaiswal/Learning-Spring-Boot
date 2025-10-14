@@ -1,6 +1,6 @@
 # Spring Boot
 
-************************ **Project 2** ************************
+************************ **Project 1** ************************
 
 ## Spring 
 ### solve problem (with introduction of dependency injection and IOC container)
@@ -189,6 +189,9 @@
   - **`@RequiredArgsConsturctor`**: automatically generates a constructor with parameters for all final fields or fields marked with `@NonNull`.
   
   - **`@NoArgsConstructor`** : utomatically generates a public no-argument constructor for a Java class at compile time — eliminating boilerplate.
+  
+  - **`@ToString`** : This will create toString Method for that class
+    - `@ToString.Exclude` : Variable with this annotation will not be used in toString Method of that class
 
 - We will use PostGreSQL for database and DBeaver for graphical analysis
   - install using chocolatey
@@ -308,14 +311,14 @@ void func() {
 }
 ```
 
-#### ✅ ResponseEntity
+#### ResponseEntity
 
 `ResponseEntity<T>` is a generic wrapper for HTTP responses in Spring Boot. It allows you to:
 
-- ✅ Set **status codes** (e.g., 200 OK, 404 Not Found, 201 Created)
-- ✅ Set **headers**
-- ✅ Return a **body**
-- ✅ Handle **errors** or **conditional responses** cleanly
+- Set **status codes** (e.g., 200 OK, 404 Not Found, 201 Created)
+- Set **headers**
+- Return a **body**
+- Handle **errors** or **conditional responses** cleanly
 
 ---
 
@@ -330,3 +333,222 @@ void func() {
     ResponseEntity.ok(body); // 200 OK
     ```
 
+#### Spring Boot Starter Validattion
+- Dependency which will validate the fields, like if its email it should follow the format of email
+- **Steps**
+  - Add dependency to the pom.xml and rebuild the maven
+- **Syntax**
+- `@Size(min=3, max=32, message="Size of Name sould be between 3 to 32 characters"` : This will check weather the size of Name field is matched or not
+- `@Email` : This will check and validate the email format
+
+- To use this validation we need to add `@Valid` annotatoin 
+
+- **Example**
+```java
+    public class AddStudentRequestDto{
+        @Email
+        @Size(min=3, max=32, message="not valid size")
+        @NotBlank(message = "Field is required can't be blank") 
+        public String email;
+        
+    }
+    
+    @PostMapping("/post")
+        public ReturnType FuncitonName(@RequestBody @Valid AddStudentRequestDto addStudentRequestDto){
+    }
+```
+
+### Spring Boot Data JPA
+- It provides an abstraction layer over JPA (Java Persistence API). It simplifies data access and database operations in a Spring-based application, making it easier to interact with relational databases (such as MySQL, PostgreSQL, Oracle, etc.) using JPA.
+- i.e It is a library through which we can perform Database operation using spring boot code
+- Here we will learn
+  - DB Connection
+  - DB Query and Query Optimization
+  - Cascade Types
+  - Indexes
+  - 1:1, 1:M, M:N Mapping
+  - Fetch Query
+![img_7.png](img_7.png)
+
+#### Entity
+- an entity is a Java class annotated with `@Entity` that maps to a table in a relational database. It represents the structure of your data and is managed by JPA/Hibernate.
+- Entity class with help of hibernate creates table with the fields in the class
+
+#### Testing in Spring Boot
+- Create Class in test directory of project
+  - test/java/projectName/PatientTests.java
+- We can run individual tests also without running the full application
+- `@SpringBootTest` annotation to tell spring boot that this class is test class
+- `@Test` annotation is used to define tests methods
+
+#### JPA Repository
+![img_8.png](img_8.png)
+
+#### Hibernate Entity LifeCycle
+![alt text](image-2.png)
+
+#### Entity Manager and Persistence Context
+- Persistence Context is used as first level cache, when same operation in transaction is performed it check in persistence context first if data found return the same if not then search in database
+- Exmaple
+```java
+    @Service
+    public class PatientService {
+        @Transactional
+        public void getPatientById() {
+            Patient p1 = patientRepository.findById(1);
+            Patient p2 = patientRepository.findById(1);
+            System.out.println(p1 == p2); // This will give true 
+    
+            // Here we are using Transaction so both patient p1 and p2 will be same, db search will happen only one time
+        }
+    }
+```
+- In Transaction, we don't need to save the change it will saved automatically
+  - code:
+  ```java
+    @Transactional
+    public Patient getPatientById(Long id){
+        Patient p1 = patientRepository.findById(id).orElseThrow();
+        p1.setName("Saddy");
+        // patientRepository.save(p1);  // No need to save, it will get saved automatically
+    }
+  ```
+
+#### Annotation Related to Entity
+1) `@Table`
+- Specifies the details of the database table.
+- It is used alongside the `@Entity` annotation.
+- Example
+```java
+@Table(
+        name = "employees",
+        schema = "hr",  // optional
+        catalog = "corporate_db",   // optional
+        uniqueConstraints = {
+                @UniqueConstraint(columnNames = {"email"}),
+                @UniqueConstraint(name = "uk_emp_code", columnNames = {"employee_code"})
+        },
+        indexes = {
+                @Index(name = "idx_emp_name", columnList = "name"),
+                @Index(name = "idx_emp_name_email", columnList = "name, email"),
+                @Index(name = "idx_emp_email", columnList = "email", unique = true)
+        }
+) 
+```
+- **Attributes**
+
+| Attribute            | Description                                                                 |
+|----------------------|-----------------------------------------------------------------------------|
+| `name`               | Name of the table in the database. If omitted, defaults to the class name. |
+| `schema`             | Name of the database schema (optional).                                     |
+| `catalog`            | Name of the database catalog (optional).                                    |
+| `uniqueConstraints`  | Specifies unique constraints across one or more columns.  [Array]           |
+| `indexes`            | Defines indexes on the table columns.         
+
+- `uniqueContraints` make the insertion slow, use wisely
+- **Note** : If we make change to name of either table or columns then new table / column with the updated name will be created
+
+2) `@Column`
+- Specify the detail of the column
+```java
+    @Column(name = "patient_name", nullable = false, unique = false, length = 64)
+    private String name;
+```
+
+3) `@CreationTimestamp`
+- Fill the value of field with the currentTime
+```java
+    @CreationTimestamp
+    @Column(updatable = false)
+    private LocalDateTime createdAt;
+```
+
+#### Database Initialization
+- When we run our project, we want to feed some data 
+- create /resources/data.sql and write the SQL QUERY
+- we will update the application.properties to perform the SQL QUERY in data.sql
+```
+spring.jpa.defer-datasource-initialization=true
+spring.sql.init.mode=always
+spring.sql.init.data-locations=classpath:data.sql
+```
+- files in the resources folder will automatically accessed by classpath
+- after this, run the spring boot application
+
+#### Migratoin
+-
+
+### JPQL & Query Methods in Spring Boot
+
+#### JPA Query Methods
+- If we need to find the data by name, i.e patientRepository.findByName(name). As this is not present inpatientRepository, so we will create method findByName in patientRepository
+- JPA will automatically create the implementation of this method, we just need to initialize this method in patientRepository
+- This findByName is a Query Method
+- naming format : `findBy`+`variableName`(in Camel Case)
+- Example
+```java
+    // Entity's Field
+    private String name;
+    private LocalDate birthDate;
+    private String email;
+    
+    // Query Method in patientRepository
+    Patient findByName(String name);
+    Patient findByEmail(String email);
+    Patient findByBirthDate(LocalDate birthDate);
+    List<Patient> findByNameOrEmail(String name, String email);
+    List<Patient> findByGender(String gender);
+```
+- We can also use Or, And for multiple Variable
+- [Refer This URL to learn More about Query Method in Spring Data JPA](https://docs.spring.io/spring-data/jpa/reference/jpa/query-methods.html)
+
+#### JPQL
+- We will use `@Query` annotation to write our custom JPQL Query for Method in patientRepository
+```java
+    // in patientRepository
+    @Query("select p from Patient p where p.bloodGroup = ?1")
+    List<Patient> getPatientByBloodGroup(@Param("bloodGroup") BloodGroupType bloodGroupType);
+    
+    @Query("select p from Patient p where p.birthDate > :birthDate")
+    List<Patient> findByBornAfterDate(@Param("birthDate") LocalDate birthDate);
+    
+    @Query("select p.bloodGroup, count(p) from Patient p group by p.bloodGroup")
+    List<Object[]> countPatientByBloodGroup();
+```
+- JPQL is similar to SQL Query but little different
+- In JPQL we will use class name, variables in class like Patient, bloodGroup not patient for table in database and blood_group as column in patient table
+- we can't use * to select all the columns of the table, instead we use `p` for all variable or `p.VariableName` for specific variable comma seperated
+- **Parameter**
+  - :param (named parameter)
+  ```java
+    @Query("select p from Patient p where p.bloodGroup = :bloodGroup")
+    List<Patient> getPatientByBloodGroup(@Param("bloodGroup") BloodGroupType bloodGroupType);
+  ```
+  - ?1 (positional parameter)
+  - 1 is position of variable
+  ```java
+    @Query("select p from Patient p where p.bloodGroup = ?1")
+    List<Patient> getPatientByBloodGroup(BloodGroupType bloodGroupType);
+  ```
+- it is mandatory to use both `@Transactional` and `@Modifying` when you're executing an update (or delete) query in Spring Data JPA using `@Query`.
+```java
+    @Transactional
+    @Modifying
+    @Query("update Patient p set p.name = :name where p.id = :id")
+    int updateNameById(@Param("name") String name, @Param("id") Long id);
+```
+
+#### Native Query
+- Pure SQL Query in Spring Boot
+- Using same `@Query` annotatoin, just add attribute nativeQuery = true
+```java
+    @Query("select * from patient", nativeQuery = true)
+    List<Patient> findAllPatient();
+```
+- Here we will use db table name, column name instead of class name and its variables
+
+#### Projection
+- Projection is the way to fetch only the specific fields 
+- **Scenerio**: If we want data and we return in Patient DTO but only want to fetch specific details then rest field will be null, so to avoid this we use projection where it will return only the specific fields that we need
+- Database will return the speific column only, we need to convert it to desired DTO
+- 
