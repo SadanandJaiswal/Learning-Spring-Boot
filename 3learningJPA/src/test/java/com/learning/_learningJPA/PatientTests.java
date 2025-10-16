@@ -1,14 +1,19 @@
 package com.learning._learningJPA;
 
 import com.learning._learningJPA.entity.Patient;
+import com.learning._learningJPA.entity.dto.BloodGroupCountResponseEntity;
 import com.learning._learningJPA.entity.type.BloodGroupType;
 import com.learning._learningJPA.repository.PatientRepository;
 import com.learning._learningJPA.service.PatientService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 
 import javax.swing.*;
+import java.awt.print.Pageable;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Objects;
@@ -25,10 +30,10 @@ public class PatientTests {
     public void testCreatePatient() {
         Patient patient = new Patient(
                 null,
-                "Pari",
-                LocalDate.of(2021, 9, 19),
-                "pari@gmail.com",
-                "Female",
+                "Rahul",
+                LocalDate.of(2006, 9, 19),
+                "rahul2@gmail.com",
+                "Male",
                 BloodGroupType.A_POSITIVE
         );
 
@@ -44,7 +49,7 @@ public class PatientTests {
 
     @Test
     public void testPatientById(){
-        Patient patient = patientService.getPatientById(1L);
+        Patient patient = patientService.getPatientById(108L);
         System.out.println(patient);
     }
 
@@ -121,14 +126,34 @@ public class PatientTests {
 
     @Test
     public void testCountPatientByBloodGroup(){
-        List<Object[]> patientList = patientRepository.countPatientByBloodGroup();
-        patientList.forEach(patient -> System.out.println(patient[0] + " " + patient[1]));
+        List<BloodGroupCountResponseEntity> patientList = patientRepository.countPatientByBloodGroup();
+        patientList.forEach(patient -> System.out.println(patient.toString()));
     }
 
     @Test
     public void testGetAllPatients(){
-        List<Patient> patientList = patientRepository.findAllPatient();
-        patientList.forEach(System.out::println);
+        printPageData(patientRepository.findAllPatient(PageRequest.of(0, 5)), "First Five Patients");
+
+        Page<Patient> patientList2 = patientRepository.findAllPatient(PageRequest.of(1, 5, Sort.by("name")));
+        System.out.println("Second Five Patients");
+        patientList2.forEach(System.out::println);
+
+        Page<Patient> patientList3 = patientRepository.findAllPatient(PageRequest.of(2, 5, Sort.by("name").ascending().and(Sort.by("birth_date").descending())));
+        System.out.println("Third Five Patients");
+        patientList3.forEach(System.out::println);
+    }
+
+    private void printPageData(Page<Patient> page, String title) {
+        System.out.println("========== " + title + " ==========");
+        System.out.println("Page Number: " + page.getNumber());
+        System.out.println("Page Size: " + page.getSize());
+        System.out.println("Total Pages: " + page.getTotalPages());
+        System.out.println("Total Elements: " + page.getTotalElements());
+        System.out.println("Is First: " + page.isFirst());
+        System.out.println("Is Last: " + page.isLast());
+        System.out.println("Number of Elements in this Page: " + page.getNumberOfElements());
+        System.out.println("----- Patient Details -----");
+        page.forEach(System.out::println);
     }
 
     @Test

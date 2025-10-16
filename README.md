@@ -551,4 +551,94 @@ spring.sql.init.data-locations=classpath:data.sql
 - Projection is the way to fetch only the specific fields 
 - **Scenerio**: If we want data and we return in Patient DTO but only want to fetch specific details then rest field will be null, so to avoid this we use projection where it will return only the specific fields that we need
 - Database will return the speific column only, we need to convert it to desired DTO
-- 
+- Copy Path Reference of the DTO
+- In JPQL Query after select use new keyword and paste the path reference of DTO and pass the selected fields as parameter to that path reference DTO
+```java
+@Query("select new com.learning._learningJPA.entity.dto.BloodGroupCountResponseEntity(p.bloodGroup, count(p)) from Patient p group by p.bloodGroup")
+// Instead of Returning Object[], we will use our custom DTO to avoid null values for unwanted fields in Patient Entity
+// List<Object[]> countPatientByBloodGroup();
+List<BloodGroupCountResponseEntity> countPatientByBloodGroup(); 
+```
+- **Note** : Projection can only be done with the JPQL Query not with the Native Query, in case of Native Query Result will be same as Returned form Native Query
+
+#### Pagination
+- Return The limited number of row 
+- Can be used with JPQL and Native Query both
+- Need to pass Pageable Parameter to the patientRepository method 
+```java
+    @Query(value = "select * from patient", nativeQuery = true)
+    Page<Patient> findAllPatient(Pageable pageable);
+```
+- When Calling this method need to pass parameter : `PageRequest.of(<PageNumber>, <PageSize>)`
+```java
+Page<Patient> patientList = patientRepository.findAllPatient(PageRequest.of(0, 5));
+```
+- `PageRequest.of(0, 10, Sort.by("name").ascending().and(Sort.by("birthDate").descending()));`
+- We can return the data in List<Patient> but we will use `Page<Patient>` this will also give extra details like total number of pages, etc along with `List<Patient>`
+
+### Spring Data JPA Mapping
+We will Build Hospital Management System
+![img_10.png](img_10.png)
+
+#### Mapping
+- Mapping describes how an entity (table) is related to another entity (table)
+- **Types**
+  1) `@OneToOne`
+  2) `@OneToMany`
+  3) `@ManyToOne`
+  4) `@ManyToMany`
+- Two Entity can have multiple relationship between them
+  - relationship 1: Many to Many (One doctor can work in many department (multitalented), Many Doctor in single department)
+  - realationship 2: One to One (Each department have one manager(doctor), one doctor is manager of only one department)
+
+##### Join Column
+- In JPA, `@JoinColumn` is used to specify the foreign key column that connects two tables
+- **Syntax**
+```java
+    @OneToOne
+    @JoinColumn(name = "column_name", unique=false, nullable=true)
+    private Insurance insurance;
+```
+
+##### Owning Side and Inverse Side
+- When we create Relationship like `@OneToOne` in Patient, it is unidirectoinal i.e only Patient knows about Insurance.
+- If we also create @OneToOne in Insurance pointing back to Patient, it becomes bidirectional.
+- Without proper configuration, this creates ambiguity, because both sides may try to own the foreign key — resulting in duplicate or conflicting foreign key mappings in the database.
+- To avoid this ambiguity, we will use Owning side and Inverse side
+- We will use mappedBy attribute in OneToOne relationship type in Inverse side, it will result in bidirectional and remove ambiguity
+```java
+    // *************** Patient Entity *****************
+    // Owning Side
+    @OneToOne
+    @JoinColumn(name = "patient_insurance_id")
+    private Insurance insurance;
+
+    // *************** Insurance Entity ****************
+    // Inverse Side
+    @OneToOne(mappedBy = "insurance")   // This will map to insurance field in Patient Entity
+    private Patient patient;
+```
+- Entity which can live without the Assosiated Entity will be Inverse Side
+- Example: Patient Can live without Appointment, means Patient will be Inverse side and Appointment can't live without Patient, hence Appointment will be Owning Side
+- Inverse side will not create foreign key in SQL, it will tell JPA and it will be bidirectional
+- **Note** : Update done on Inverse side will not update on Owning side
+
+##### ManyToMany Relationship
+- One Doctor can be in many Department (multitalented) and Each Department can have multiple Doctor in it
+- In a ManyToMany relationship in JPA (Java Persistence API), a join table is created to store the associations between the two entities. The join table will contain two foreign key columns, each referencing one of the entities involved in the relationship. These two columns, along with any other relevant columns, will serve as the primary key for the join table.
+```java
+    // In Department Entity
+    
+    @ManyToMany
+    @JoinTable(
+            name = "department_doctors",
+            joinColumns = @JoinColumn(name = "department_id"),
+            inverseJoinColumns = @JoinColumn(name = "doctor_id")
+    )
+    private Set<Doctor> doctors = new HashSet<>();  
+```
+
+
+### Helpfull Tools
+#### JPA Buddy
+- plugin that will have to perform certain task related to JPA, no need to code by yourself
