@@ -638,7 +638,63 @@ We will Build Hospital Management System
     private Set<Doctor> doctors = new HashSet<>();  
 ```
 
+##### CasCade
+- behavior where certain operations on an entity are automatically propagated to associated entities. For example, when you save, delete, or update an entity, you might want to automatically apply the same operation to its related entities.
+- We do cascade in parent entity, i.e Owning side
+```java
+    @OneToOne(cascade = {CascadeType.MERGE, CascadeType.PERSIST})
+    @JoinColumn(name = "patient_insurance_id")
+    private Insurance insurance;
+```
+- Here we have not created the insurance yet as we have used cascade and transactoin so it will automatically first create insurance and then link it to the patient
+```java
+    Insurance insurance = Insurance.builder().build();
+    insuranceService.assignInsuranceToPatient(insurance, patientId);
+```
+
+##### FetchType in JPA
+- When working with entity relationships like `@OneToMany`, `@OneToOne`, `@ManyToOne`, and `@ManyToMany`, `FetchType` determines **when** the related entity should be loaded from the database.
+- Example: If Patient entity has Appointment as a related entity, FetchType.LAZY means the appointments will not be loaded when the patient is fetched — they’ll be loaded only when accessed.
+- Type of FetchTypes
+  - `EAGER`
+    - Loads the related entity **immediately** along with the main entity.
+    - Similar to SQL **join fetch**.
+    - Use when the related entity is **always needed**.
+    ```java
+    @OneToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "insurance_id")
+    private Insurance insurance;
+    ```
+  - `LAZY`
+    - Loads the related entity only when it's accessed.
+    - Returns a proxy initially.
+    - Use when the related entity is optional or rarely accessed.
+    ```java
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "patient")
+    private List<Appointment> appointments;
+    ```
+- for `@OneToOne` and `@ManyToOne` default is Eager and for `@OneToMany` and `@ManyToMany` default is Lazy
+
 
 ### Helpfull Tools
 #### JPA Buddy
 - plugin that will have to perform certain task related to JPA, no need to code by yourself
+
+#### Builder Annotation
+- It’s used to automatically generate the Builder pattern for your Java classes, making object construction cleaner, especially for classes with many fields.
+- With Builder no need to create constructor, it will do automatically
+```java
+@Builder
+public class Insurance {
+    // fields : policyNumber, validUntil, provider, patient, id, etc
+}
+
+public void function(){
+    Insurance insurance = Insurance.builder()
+            .policyNumber("HDFC_1234")
+            .validUntil(LocalDate.of(2021,12,12))
+            .provider("HDFC")
+            .build();
+
+}
+```

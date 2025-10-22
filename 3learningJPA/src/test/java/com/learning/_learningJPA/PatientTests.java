@@ -55,7 +55,7 @@ public class PatientTests {
 
     @Test
     public void testPatientByName(){
-        Patient patient = patientRepository.findByName("Rahul Sharma");
+        Patient patient = patientRepository.findByName("Rahul");
         System.out.println(patient);
     }
 
