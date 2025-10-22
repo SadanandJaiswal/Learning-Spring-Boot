@@ -60,10 +60,10 @@ VALUES
 -- Assume patients and doctors were inserted in the order as listed, so use their auto-generated IDs
 INSERT INTO appointment (appointment_time, reason, status, patient_id, doctor_id)
 VALUES
-('2025-10-17T10:00:00', 'Routine heart checkup', 'Scheduled', 1, 1),
-('2025-10-18T11:30:00', 'Knee pain consultation', 'Completed', 2, 2),
-('2025-10-19T09:00:00', 'Child fever', 'Scheduled', 3, 3),
-('2025-10-20T14:00:00', 'Follow-up for blood pressure', 'Cancelled', 1, 1);
+('2025-10-17T10:00:00', 'Routine heart checkup', 'SCHEDULED', 1, 1),
+('2025-10-18T11:30:00', 'Knee pain consultation', 'COMPLETED', 2, 2),
+('2025-10-19T09:00:00', 'Child fever', 'SCHEDULED', 3, 3),
+('2025-10-20T14:00:00', 'Follow-up for blood pressure', 'CANCELLED', 1, 1);
 
 -- ========================
 -- Map Doctors to Departments (department_doctors)

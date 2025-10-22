@@ -1,10 +1,8 @@
 package com.learning._learningJPA.entity;
 
+import com.learning._learningJPA.entity.type.AppointmentStatusType;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
@@ -13,6 +11,7 @@ import java.time.LocalDateTime;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
+@Builder
 public class Appointment {
 
     @Id
@@ -25,7 +24,8 @@ public class Appointment {
     @Column(length = 500)
     private String reason;
 
-    private String status;
+    @Enumerated(EnumType.STRING)
+    private AppointmentStatusType status;
 
     // *********************** Foreign Key ********************
     @ManyToOne

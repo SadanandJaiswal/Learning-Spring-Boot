@@ -651,6 +651,20 @@ We will Build Hospital Management System
     Insurance insurance = Insurance.builder().build();
     insuranceService.assignInsuranceToPatient(insurance, patientId);
 ```
+- If Patient is Deleted then there is no use of appointment, so we will add cascade in patient - appointment relationship on patient side, though it is on inverse side
+```java
+    @OneToMany(mappedBy = "patient", fetch = FetchType.EAGER, cascade = {CascadeType.REMOVE})
+    private List<Appointment> appointments = new ArrayList<>();
+```
+
+##### OrphanRemoval
+- If parent remove the child from its list, child become orphan. Then orphanRemoval will delete the child
+- E.g We remove one appointment from appointments list : `appointments.getAppointment().remove(appointment1)`, this will remove appointment1
+- Resulting in appointment1 as orphan, so we don't need this anymore, hence orpahnremowal will remove this
+```java
+    @OneToMany(mappedBy = "patient", fetch = FetchType.EAGER, cascade = {CascadeType.REMOVE}, orphanRemoval=true)
+    private List<Appointment> appointments = new ArrayList<>();
+```
 
 ##### FetchType in JPA
 - When working with entity relationships like `@OneToMany`, `@OneToOne`, `@ManyToOne`, and `@ManyToMany`, `FetchType` determines **when** the related entity should be loaded from the database.
@@ -675,6 +689,9 @@ We will Build Hospital Management System
     ```
 - for `@OneToOne` and `@ManyToOne` default is Eager and for `@OneToMany` and `@ManyToMany` default is Lazy
 
+##### Creating Appointment
+- Appointment have relationship with doctor and patient and appointment own that relationship
+- So, we will set patient and doctor detail in appointment
 
 ### Helpfull Tools
 #### JPA Buddy
@@ -698,3 +715,30 @@ public void function(){
 
 }
 ```
+
+#### N+1 Query Problem
+- It is a performance issue in JPA/Hibbernate where you load a list of entries and for each entriies a seperate query is executed to fetch there entities, resulting in N + 1
+- e.g Fetch all patient, with there appointment. Here first all patient will be fetched (N patient) with one query, then for each N patient N different query is executed to fetch appointment of that patient
+- 1 main query + N extra query
+```sql
+select * from patient p => for each patient select * from appointment a where a.patientId = p.id
+```
+- JPA/Hibernate
+```java
+    // Fetch All Patient
+    List<Patient> patientList = patientRepository.findAll();
+
+    // As FetchType.EAGER then Appointment detail will be automatically fetched for Each patient, resulting in N+! Query Problem
+    @OneToMany(mappedBy = "patient", fetch = FetchType.EAGER, cascade = {CascadeType.REMOVE}, orphanRemoval = true)
+    private List<Appointment> appointments = new ArrayList<>();
+```
+
+##### Solution for N+1 Query Problem
+1) fetch = FetchType.LAZY instead of FetchType.EAGER && @ToString.Exclude
+2)  If we want the appointment detail along with all patient so we will not use `patientRepository.findAll()` instead we will use custom query
+```java
+    // Find all patient with there appointment
+    @Query("select p from Patient p left join fetch p.appointments")
+    List<Patient> findAllPatientWithAppointment();
+```
+- **Note** : More Joins result in more unoptimization of query

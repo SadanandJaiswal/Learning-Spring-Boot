@@ -22,7 +22,7 @@ public class InsuranceTests {
         // Avoid this, we will use Builder
 
         Insurance insurance = Insurance.builder()
-                .policyNumber("HDFC_123456")
+                .policyNumber("HDFC_12345678")
                 .validUntil(LocalDate.of(2021,12,12))
                 .provider("HDFC")
                 .build();
@@ -31,5 +31,8 @@ public class InsuranceTests {
 
         Patient patient = insuranceService.assignInsuranceToPatient(insurance, 6L);
         System.out.println(patient);
+
+        Patient newPatient = insuranceService.dissaccosiateInsuranceFromPatient(patient.getId());
+        System.out.println(newPatient);
     }
 }

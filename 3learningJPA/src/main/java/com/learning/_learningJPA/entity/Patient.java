@@ -60,10 +60,10 @@ public class Patient {
     @Enumerated(EnumType.STRING)    // other wise it will store 0,1,2 insted of value
     private BloodGroupType bloodGroup;
 
-    @OneToOne(cascade = {CascadeType.MERGE, CascadeType.PERSIST})
+    @OneToOne(cascade = {CascadeType.ALL}, orphanRemoval = true)
     @JoinColumn(name = "patient_insurance_id")
     private Insurance insurance;
 
-    @OneToMany(mappedBy = "patient", fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "patient", fetch = FetchType.EAGER, cascade = {CascadeType.REMOVE}, orphanRemoval = true)
     private List<Appointment> appointments = new ArrayList<>();
 }

@@ -48,6 +48,18 @@ public class PatientTests {
     }
 
     @Test
+    public void testPatientWithAppointment(){
+        List<Patient> patientList = patientRepository.findAllPatientWithAppointment();
+        patientList.forEach(patient -> System.out.println(patient.toString()));
+    }
+
+    @Test
+    public void testFindAllPatientWithAppointmentWithDoctor(){
+        List<Patient> patientList = patientRepository.findAllPatientWithAppointmentWithDoctor();
+        patientList.forEach(patient -> System.out.println(patient.toString()));
+    }
+
+    @Test
     public void testPatientById(){
         Patient patient = patientService.getPatientById(108L);
         System.out.println(patient);
