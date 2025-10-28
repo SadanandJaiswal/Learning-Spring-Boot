@@ -324,7 +324,7 @@ void func() {
 
 - **Syntax**
     ```java
-    ResponseEntity<T> response = new ResponseEntity<>(body, status);
+    ResponseEntity<T> response = neew ResponseEntity<>(body, status);
     ```
     
     Or using static helper methods:
@@ -742,3 +742,102 @@ select * from patient p => for each patient select * from appointment a where a.
     List<Patient> findAllPatientWithAppointment();
 ```
 - **Note** : More Joins result in more unoptimization of query
+
+
+## Spring Security
+![img_11.png](img_11.png)
+
+- Add Spring Security Dependency to pom.xml, and sync with maven. After syncing with maven, then re run the application. 
+
+#### Running Application with Spring Security
+- Default all the routes will become protected
+- Default user : user and password : 0cdc7e0a-7fd4-4e44-b207-e3e8b9f034a0 , gets generated
+- Try to access the Route, Login form will appear, routes are protected 
+- After login, SessionId will be stored in cookies to prevent furture logins
+- **Logout** : /api/v1/logout , this will logout the session
+- **Custom User Password**
+  - Go to application.properties
+  - spring.security.user.name=saddy
+  - spring.security.user.password=password
+
+### Security Filter Chain
+#### Filter Chain
+A filter chain is a sequence of filters that can be applied to requests and responses in a web application. Filters are used to process requests before they reach a servlet or a resource and/or to process responses before they are sent back to the client. They are often used for tasks like logging, authentication, authorization, input validation, compression, or modifying the response content.
+
+#### Servlet Filter Chain
+The servlet filter chain refers to a set of filters that intercept HTTP requests before they reach the servlet and after they leave the servlet but before they are sent back to the client.
+
+**Note** : If Spring Security is added in the project, then also by default you get Servlet Filter Chain
+
+#### Security Filter Chain
+A security filter chain is a specialized form of a filter chain, primarily used for managing security concerns like authentication and authorization. This is typically found in web applications using frameworks like Spring Security or Java EE Security.
+
+**FilterChain** Proxy will attach the  Security Filter Chain to Servlet Filter Chain
+
+### Configure Security Filter Chain to Project
+create file : config/WebSecurityConfig.java  and configure the Security Filter Chain
+```java
+@Configuration
+public class WebSecurityConfig {
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception{
+        httpSecurity.formLogin(Customizer.withDefaults());
+        return httpSecurity.build();
+    }
+}
+```
+**SecurityFilterChain** : This method configures the security rules for your web application
+
+**`.formLogin(Customizer.withDefaults())`** : This enables form-based login using Spring Security’s default login page.
+
+This Will, allow login form, but now all the routes are public, no need of login / authentication to access the endpoints
+
+**Note** Generally we use, frontend to login and backend to authorize, we will be not using this login form
+
+#### Customize the Security Filter
+We can customize the security filter, for example allow public route to accessible to all and admin routes only to loggedin user
+**permitAll()** : This will allow access all the routes
+**authenticated()** : Route access only to logged in user
+```java
+    httpSecurity.authorizeHttpRequests(auth -> auth
+        .requestMatchers("/public/**").permitAll()
+        .requestMatchers("/admin/**").hasRole("ADMIN")
+        .requestMatchers("/doctors/**").hasAnyRole("DOCTOR", "ADMIN")
+    )
+```
+
+#### UserDetailsService
+This method creates and registers a UserDetailsService bean that stores user credentials in memory (not in a database).
+
+```java
+@Bean
+UserDetailsService userDetailsService(){
+    UserDetails admin = User.withUsername("admin")
+            .password(passwordEncoder.encode("adminpass"))
+            .roles("ADMIN")
+            .build();
+
+    UserDetails patient1 = User.withUsername("user")
+            .password(passwordEncoder.encode("userpass"))
+            .roles("PATIENT")
+            .build();
+    
+    return new InMemoryUserDetailsManager(admin, patient1, doctor1);
+}
+```
+
+**UserDetails**
+- It’s the user model that Spring Security uses internally.
+- It holds everything Spring Security needs to authenticate and authorize a user:
+  - Username
+  - Password (encoded)
+  - Roles/authorities
+  - Account status (locked, expired, disabled, etc.)
+
+
+### Internal Working of Spring Security
+![img_12.png](img_12.png)
+
+Deep in AuthenticatoinManager and AuthenticationProvider
+![img_13.png](img_13.png)
+
