@@ -841,3 +841,230 @@ UserDetailsService userDetailsService(){
 Deep in AuthenticatoinManager and AuthenticationProvider
 ![img_13.png](img_13.png)
 
+
+## JWT (JSON Web Token)
+JWT stands for JSON Web Token — it’s a compact, URL-safe way to securely transmit information between two parties (usually a client and a server) as a JSON object.
+
+#### Structure of a JWT 
+A JWT has three parts, separated by dots (.)
+```css
+header.payload.signature
+```
+Example
+```
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.
+eyJ1c2VySWQiOjEyMywiZW1haWwiOiJqb2huQGV4YW1wbGUuY29tIn0.
+TJVA95OrM7E2cBab30RMHrHDcEfxjoYZgeFONFh7HgQ
+```
+
+1. Header : Contains metadata about the token — typically the algorithm used for signing and the token type
+```json
+{
+  "alg": "HS256",
+  "typ": "JWT"
+}
+```
+2. Payload : Contains the actual data or “claims.” 
+**Note*: The payload is not encrypted, just base64-encoded — so never store sensitive info (like passwords) inside.
+```json
+{
+  "userId": 123,
+  "email": "john@example.com",
+  "role": "admin",
+  "exp": 1730242104
+}
+```
+4. Signature : Used to verify that the token hasn’t been tampered with
+```scss
+HMACSHA256(
+  base64UrlEncode(header) + "." + base64UrlEncode(payload),
+  secret_key
+)
+```
+
+### Creation of JWT Token
+![img_14.png](img_14.png)
+
+### Validating JWT Token
+![img_18.png](img_18.png)
+
+### Sequence Diagram of JWT
+![img_15.png](img_15.png)
+
+### Spring Security with JWT Authentication
+![img_20.png](img_20.png)
+
+- Create the User Entity and implements UserDetails
+- All thing related to Security will be put in the Security package
+- We create our own custom UserDetails and UserDetailsService
+- Create : **Entity** : User, **Repository** : UserRepository(with method findByUsername), **Controller** : AuthController, **Service** : AuthService and AuthUtil
+- Create Login and Signup AuthService, sent jwt token after successful login
+
+### JWT Implementation
+1. Add Dependencies
+   - go to : https://mvnrepository.com/artifact/io.jsonwebtoken/jjwt
+   - add : `jjwt-api`, `jjwt-impl` and `jjwt-jackson`
+   - rebuild maven project
+2. Generate Secret Key
+    ```java
+        @Value("${jwt.secretKey}")
+        private String jwtSecretKey;
+        
+        public SecretKey getSecretKey(){
+            return Keys.hmacShaKeyFor(jwtSecretKey.getBytes(StandardCharsets.UTF_8));
+        }
+    ```
+3. Generate Access Token
+    ```java
+        public String generateAccessToken(User user){
+            return Jwts.builder()
+                .subject(user.getUsername())
+                .claim("userId", user.getId().toString())
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis()+ 1000*60*10))
+                .signWith(getSecretKey())
+                .compact();
+        }
+    ```
+
+
+### Authentication using AuthenticationManager
+- It authenticate the user : `authenticationManager.authenticate(token)`
+- Spring Security calls the AuthenticationManager, which in turn calls `UserDetailsService.loadUserByUsername()`. This is where Spring checks if the username exists and retrieves user details.
+
+- Example
+    ```java
+    Authentication authentication = authenticationManager.authenticate(
+        new UsernamePasswordAuthenticationToken(loginRequestDto.getUsername(), loginRequestDto.getPassword())
+    );
+    ```
+    Here, `UsernamePasswordAuthenticationToken` is a Spring Security token object that just carries the username and password provided by the user.
+
+
+### Place of Filter and Interceptor
+![img_23.png](img_23.png)
+
+
+### Login Workflow with JWT
+![img_21.png](img_21.png)
+
+## Authentication with JWT
+- We will create one filter, that will authenticate the user's jwt token
+- Steps to create Filter
+  1. Check Weather Bearer Token present or not
+  2. Split and extract the `username` from JWT Token
+  3. Check `username` not null and `SecurityContextHolder` already set or not, it should be null
+  4. Create new `UsernamePasswordAuthenticationToken` and set to `SecurityContextHolder`
+  5. Move to next filter `filterChain.doFilter(request,response);`
+- Add Filter to SecurityFilter Chain
+```java
+@Bean
+public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
+    httpSecurity.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+}
+```
+
+### Authentication Workflow with JWT
+![img_22.png](img_22.png)
+
+#### Slf4j
+- Simple Logging Framework for Java, Library used for logging
+- Example
+    ```java
+    log.info("Incoming Request {}" , request.getRequestURI());
+    ```
+
+### Error Handeling
+- We use Global Exception Handler, to handle all the error in the project
+- For Good Practice we use A Specific Error Class To return When Accessing the APIs, for here we will use ApiError Class
+- GlobalExceptionHandler 
+```java
+@RestControllerAdvice
+public class GlobalExceptionHandler {
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ApiError> handleGenericException(Exception ex) {
+        ApiError apiError = new ApiError(
+                "An unexpected error occurred: " + ex.getMessage(),
+                HttpStatus.INTERNAL_SERVER_ERROR
+        );
+        return new ResponseEntity<>(apiError, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+}
+```
+**Note** : These error will be reflected only in Spring MVC to use this in Filter as well, we need to add extra line 
+
+**Solution** : Use Try Catch with HandlerExceptionResolver
+```java
+private final HandlerExceptionResolver handlerExceptionResolver;
+
+public MyMethod{
+    try{}
+    catch (Exception ex){
+        handlerExceptionResolver.resolveException(request, response, null, ex);
+    }
+}
+```
+
+## OAuth2 Authentication Using Google, Github
+
+### Setup
+- Add Dependency
+    ```java
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-oauth2-client</artifactId>
+    </dependency>
+    ```
+- Configuration (pom.xml / application.yml)
+```properties
+# OAuth 2 Configuration (default available: google, facebook, github)
+
+spring.security.oauth2.client.registration.google.client-id=<google-oauth2-client-id>
+spring.security.oauth2.client.registration.google.client-secret=<google-oauth2-client-secret>
+```
+- We can use application.yml as alternate of application.properties. Which will help to reduce rewrite
+```yml
+spring:
+  security.oauth2.client:
+    registration:
+      google:
+        client-id: <google-oauth2-client-id>
+        client-secret: <google-oauth2-client-secret>
+      github:
+        client-id: <github-oauth2-client-id>
+        client-secret: <github-oauth2-client-secret>
+```
+- After this update SecurityFilterChain
+    ```java
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
+        httpSecurity
+            // More Configurations here
+            .oauth2Login(oAuth2 -> oAuth2.failureHandler(
+                (AuthenticationFailureHandler) (request, response, exception) -> {
+                    log.error("OAuth2 error: {}", exception.getMessage());
+                }
+            ));
+    }
+    ```
+- **Note**: Doing this will create /context-path/login route with login form, with google, github as provider. This will still not work as we have provided wrong client-id and client-secret
+
+## Get client-id and client-secret
+### Google
+- visit : http://console.cloud.google.com/
+- create project (new) : <project-name> and select that project
+- Go: api and services > oauth2 consent screen
+  - If new > Get Started
+  - Else > Create OAuth Client
+- Authorized JavaScript origins : Frontend form where request will be raised
+  - http://localhost:8080/
+- Authorized redirect URIs: Backend URL , where token will be sent
+  - http://localhost:8080/api/v1/login/oauth2/code/google 
+  - we can configure this route if we need. By default Spring Boot cretae this where token come
+
+
+## OAuth2 Authentication Flow
+![img_24.png](img_24.png)
+
+
+## Handeling the Token (After Login: OAuth2 - Google)
