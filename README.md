@@ -1040,11 +1040,12 @@ spring:
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
         httpSecurity
             // More Configurations here
-            .oauth2Login(oAuth2 -> oAuth2.failureHandler(
-                (AuthenticationFailureHandler) (request, response, exception) -> {
-                    log.error("OAuth2 error: {}", exception.getMessage());
-                }
-            ));
+            .oauth2Login(oAuth2 -> oAuth2
+                    .failureHandler((AuthenticationFailureHandler) (request, response, exception) -> {
+                        log.error("OAuth2 error: {}", exception.getMessage());
+                    })
+                    .successHandler(oAuth2SuccessHandler)
+            );
     }
     ```
 - **Note**: Doing this will create /context-path/login route with login form, with google, github as provider. This will still not work as we have provided wrong client-id and client-secret
@@ -1063,8 +1064,25 @@ spring:
   - we can configure this route if we need. By default Spring Boot cretae this where token come
 
 
+### Github
+- visit : https://github.com/settings/developers
+- create new Auth App
+- Homepage Url : http://localhost:8080/
+- Authorization Callback URL : http://localhost:8080/api/v1/login/oauth2/code/github
+- Click **Register application**
+- Copy and use the Github `ClientID` and `Client-Secret`
+
 ## OAuth2 Authentication Flow
 ![img_24.png](img_24.png)
 
 
 ## Handeling the Token (After Login: OAuth2 - Google)
+- When OAtuh2 Login is successfull form provider end, then it will return access token. Based on that, check weather user is already registered or not on our platform. If already registered then login and generate the jwt token, if not then first create new user and then generate the jwt token for that user.
+- Extract `token`, `userDetails` and `registrationId`
+    ```java
+    OAuth2AuthenticationToken token = (OAuth2AuthenticationToken) authentication;
+    OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
+    
+    // Get RegistrationID : which tells which provider is used (string: e.g - google, facebook)
+    String registrationId = token.getAuthorizedClientRegistrationId();
+    ```
