@@ -1072,6 +1072,32 @@ spring:
 - Click **Register application**
 - Copy and use the Github `ClientID` and `Client-Secret`
 
+
+### Provider whihc are not by default configured 
+- Provide provider details in `application.yml` along with registration's `client-id` and `client-secret`
+```yml
+spring.security.oauth2.client:
+    provider:
+      twitter:
+        authorization-uri: https://twitter.com/i/oauth2/authorize
+        token-uri: https://api.twitter.com/2/oauth2/token
+        user-info-uri: https://api.twitter.com/2/users/me
+        user-name-attribute: id
+    registration:
+      twitter:
+        client-id: xxxxxxxx-xxxxxxxxxxx-xxxxxxxxxxx
+        client-secret: aaaaaaa-bbbbbbbbbb-ccccccccc-11111-222-23333
+        authorization-grant-type: authorization_code
+        redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+        scope:
+          - tweet.read
+          - users.read
+          - offline.access
+        client-name: Twitter
+        provider: twitter
+```
+- **Note** : Same can be done for all the other provider that are not configured default in OAuth2 in Spring Boot
+
 ## OAuth2 Authentication Flow
 ![img_24.png](img_24.png)
 
@@ -1086,3 +1112,6 @@ spring:
     // Get RegistrationID : which tells which provider is used (string: e.g - google, facebook)
     String registrationId = token.getAuthorizedClientRegistrationId();
     ```
+
+
+## Role Based Access Controls
