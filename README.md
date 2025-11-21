@@ -10,7 +10,7 @@
 
 ### Spring Framework Modules
 - The Spring Framework provides a comprehensive programming and configuration model for modern Java- based enterprise applications - on any kind of deployment platform.
-![alt text](image-1.png)
+![Screenshot-Image](assets/image-1.png)
 
 ### Spring Vs Spring Boot
 | **Feature**             | **Spring**                             | **Spring Boot**                       |
@@ -125,22 +125,22 @@
 
 
 ### What happens when you run spring boot application
-![alt text](image.png)
+![Screenshot-Image](assets/image.png)
 
 ************************ **Project 2** ************************
 
 ## How Does the Web Server work in Spring Boot
-![img_1.png](img_1.png)
-![img.png](img.png)
+![Screenshot-Image](assets/img_1.png)
+![Screenshot-Image](assets/img.png)
 - MVC Architecture
 - Spring MVC (traditional flow)
-  ![img_2.png](img_2.png)
+  ![Screenshot-Image](assets/img_2.png)
 - Spring MVC with REST API
-  ![img_3.png](img_3.png)
+  ![Screenshot-Image](assets/img_3.png)
 
 ## Build REST API
 - We will use 3 layer Architecture (controller, service, repository)
-  - ![img_5.png](img_5.png)
+  - ![Screenshot-Image](assets/img_5.png)
     -  1. **Client Request:**
         - The client sends data (usually in JSON format) via HTTP.
     -  2. **Presentation Layer (Controller):**
@@ -160,7 +160,7 @@
 
 
 - Request (Client) → Controller → Service → Repository → Entity/Model ↔ Database ↔ Repository → Service → Controller → Response (JSON/View)
-![img_6.png](img_6.png)
+![Screenshot-Image](assets/img_6.png)
 
 
 ### Student Management (RETS API)
@@ -368,7 +368,7 @@ void func() {
   - Indexes
   - 1:1, 1:M, M:N Mapping
   - Fetch Query
-![img_7.png](img_7.png)
+![Screenshot-Image](assets/img_7.png)
 
 #### Entity
 - an entity is a Java class annotated with `@Entity` that maps to a table in a relational database. It represents the structure of your data and is managed by JPA/Hibernate.
@@ -382,10 +382,10 @@ void func() {
 - `@Test` annotation is used to define tests methods
 
 #### JPA Repository
-![img_8.png](img_8.png)
+![Screenshot-Image](assets/img_8.png)
 
 #### Hibernate Entity LifeCycle
-![alt text](image-2.png)
+![Screenshot-Image](assets/image-2.png)
 
 #### Entity Manager and Persistence Context
 - Persistence Context is used as first level cache, when same operation in transaction is performed it check in persistence context first if data found return the same if not then search in database
@@ -578,7 +578,7 @@ Page<Patient> patientList = patientRepository.findAllPatient(PageRequest.of(0, 5
 
 ### Spring Data JPA Mapping
 We will Build Hospital Management System
-![img_10.png](img_10.png)
+![Screenshot-Image](assets/img_10.png)
 
 #### Mapping
 - Mapping describes how an entity (table) is related to another entity (table)
@@ -745,7 +745,7 @@ select * from patient p => for each patient select * from appointment a where a.
 
 
 ## Spring Security
-![img_11.png](img_11.png)
+![Screenshot-Image](assets/img_11.png)
 
 - Add Spring Security Dependency to pom.xml, and sync with maven. After syncing with maven, then re run the application. 
 
@@ -836,10 +836,10 @@ UserDetailsService userDetailsService(){
 
 
 ### Internal Working of Spring Security
-![img_12.png](img_12.png)
+![Screenshot-Image](assets/img_12.png)
 
 Deep in AuthenticatoinManager and AuthenticationProvider
-![img_13.png](img_13.png)
+![Screenshot-Image](assets/img_13.png)
 
 
 ## JWT (JSON Web Token)
@@ -883,16 +883,16 @@ HMACSHA256(
 ```
 
 ### Creation of JWT Token
-![img_14.png](img_14.png)
+![Screenshot-Image](assets/img_14.png)
 
 ### Validating JWT Token
-![img_18.png](img_18.png)
+![Screenshot-Image](assets/img_18.png)
 
 ### Sequence Diagram of JWT
-![img_15.png](img_15.png)
+![Screenshot-Image](assets/img_15.png)
 
 ### Spring Security with JWT Authentication
-![img_20.png](img_20.png)
+![Screenshot-Image](assets/img_20.png)
 
 - Create the User Entity and implements UserDetails
 - All thing related to Security will be put in the Security package
@@ -942,11 +942,11 @@ HMACSHA256(
 
 
 ### Place of Filter and Interceptor
-![img_23.png](img_23.png)
+![Screenshot-Image](assets/img_23.png)
 
 
 ### Login Workflow with JWT
-![img_21.png](img_21.png)
+![Screenshot-Image](assets/img_21.png)
 
 ## Authentication with JWT
 - We will create one filter, that will authenticate the user's jwt token
@@ -965,7 +965,7 @@ public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws
 ```
 
 ### Authentication Workflow with JWT
-![img_22.png](img_22.png)
+![Screenshot-Image](assets/img_22.png)
 
 #### Slf4j
 - Simple Logging Framework for Java, Library used for logging
@@ -1099,7 +1099,7 @@ spring.security.oauth2.client:
 - **Note** : Same can be done for all the other provider that are not configured default in OAuth2 in Spring Boot
 
 ## OAuth2 Authentication Flow
-![img_24.png](img_24.png)
+![Screenshot-Image](assets/img_24.png)
 
 
 ## Handeling the Token (After Login: OAuth2 - Google)
