@@ -1,6 +1,8 @@
 package com.codingshuttle.youtube.hospitalManagement.entity;
 
 import com.codingshuttle.youtube.hospitalManagement.entity.type.AuthProviderType;
+import com.codingshuttle.youtube.hospitalManagement.entity.type.RoleType;
+import com.codingshuttle.youtube.hospitalManagement.security.RolePermissionMapping;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -9,12 +11,16 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Entity
 @Getter
@@ -42,23 +48,34 @@ public class User implements UserDetails {
     @Enumerated(EnumType.STRING)
     private AuthProviderType providerType;
 
-//    @CreatedDate
-//    @Column(updatable = false)
-//    private LocalDateTime createdAt;
-//
-//    @LastModifiedDate
-//    private LocalDateTime updatedAt;
+    @ElementCollection(fetch = FetchType.EAGER)
+    @Enumerated(EnumType.STRING)
+    Set<RoleType> roles = new HashSet<>();
 
     @CreationTimestamp
-    @Column(name = "created_at", updatable = false)
-    private Instant createdAt;
+    @Column(updatable = false)
+    private LocalDateTime createdAt;
 
     @UpdateTimestamp
     @Column(name = "updated_at")
-    private Instant updatedAt;
+    private LocalDateTime updatedAt;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of();
+        // Return Roles
+        /*
+        return roles.stream().map(
+                role -> new SimpleGrantedAuthority("ROLE_"+role.name())
+        ).collect(Collectors.toSet());
+         */
+
+        Set<SimpleGrantedAuthority> authorities = new HashSet<>();
+        roles.forEach(role -> {
+            Set<SimpleGrantedAuthority> permissions = RolePermissionMapping.getAuthoritiesForRole(role);
+            authorities.addAll(permissions);
+            authorities.add(new SimpleGrantedAuthority("ROLE_"+role.name()));
+        });
+
+        return authorities;
     }
 }

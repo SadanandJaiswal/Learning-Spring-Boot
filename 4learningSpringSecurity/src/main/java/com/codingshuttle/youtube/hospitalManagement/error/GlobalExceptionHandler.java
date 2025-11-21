@@ -1,6 +1,7 @@
 package com.codingshuttle.youtube.hospitalManagement.error;
 
 import io.jsonwebtoken.JwtException;
+import org.springframework.boot.context.config.ConfigDataResourceNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;

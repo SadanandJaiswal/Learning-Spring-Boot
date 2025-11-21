@@ -1115,3 +1115,170 @@ spring.security.oauth2.client:
 
 
 ## Role Based Access Controls
+
+### @ElementCollection - annotation
+- For any Simple Type or Embeddable Class in Entity if we use List, Set, Map then we use `@ElementCollection` annotation, which will create different table for that field
+    ```java
+    @ElementCollection(fetch = FetchType.EAGER)
+    @Enumerated(EnumType.STRING)
+    Set<RoleType> roles = new HashSet<>();
+    ```
+
+**Embeddable Class** : Embeddable class JPA me ek chhota reusable object hota hai jise aap entity ke andar embed kar sakte ho.
+Ye entity nahi hota, isliye iska apna primary key, apni table, apna lifecycle nahi hota.
+Iska kaam hota hai multiple fields ko ek logical unit ke roop me group karna.
+
+```java
+@Embeddable
+public class Address {
+    private String street;
+    private String city;
+}
+```
+
+### Set Role
+- By default we will be setting Patient Role to all user
+    ```java
+    // Save Default Role when user is created
+    public void signUp(){
+        // rest code;
+        userRepository.save(User.builder().roles(new HashSet<>(Set.of(RoleType.PATIENT))).build());
+        return;
+    }
+    ```
+- This will be added in User entity, which will return list of Roles particular user will have. 
+- `SecurityFilterChain` check hasRole starting with ROLE that's why we have concated the `ROLE_` before each `RoleType` 
+    ```java
+    public class User implements UserDetails {
+        @Override
+        public Collection<? extends GrantedAuthority> getAuthorities() {
+            return roles.stream().map(
+                    role -> new SimpleGrantedAuthority("ROLE_" + role.name())
+            ).collect(Collectors.toSet());
+        }
+    }
+    ```
+- Check Role to allow only the authorized user to access the resource
+    ```java
+    public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
+        httpSecurity.authorizeHttpRequests(auth -> auth
+                .requestMatchers("/public/**", "/auth/**").permitAll()
+                .requestMatchers("/admin/**").hasRole(RoleType.ADMIN.name())
+                .requestMatchers("/doctors/**").hasAnyRole(RoleType.DOCTOR.name(), RoleType.ADMIN.name())
+                .anyRequest().authenticated()
+        );
+        return httpSecurity.build();
+    }
+    ```
+
+### @MapsId - annotation
+- This will map the Id of entity with the related Entities Id and no extra Id field will be created for that entity.
+```java
+public class Patient {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @OneToOne
+    @MapsId
+    private User user;
+}
+```
+- Here Patient will be User only, so no need for extra patient id, it will be mapped same as of user id
+
+
+### Access Denied Handelling
+- Currently when User is not authorized then user is redirected to Login/Signup Page rather than throwing Access Denied Error.
+- Edit the `WebSecurityConfig.java` file
+```java
+httpSecurity.exceptionHandling(httpSecurityExceptionHandlingConfigurer ->
+    httpSecurityExceptionHandlingConfigurer.accessDeniedHandler(
+        (AccessDeniedHandler) (request, response, accessDeniedException) -> {
+        handlerExceptionResolver.resolveException(request,response,null,accessDeniedException);
+        }
+    )
+)
+```
+
+### Granular Level Authorization Controll
+- Different roles permmisions for different operation, like document read, write, edit, delete
+
+#### For Exmaple - Roles and their Permissions
+- Admin
+  - Can create doctor profiles
+  - Can update any profile
+  - Can delete any profile
+  - Can view all data
+- Doctor
+  - Can view their own schedule
+  - Can update their own availability
+  - Cannot delete or create new doctor accounts
+- Patient
+  - Can view list of doctors
+  - Can book an appointment
+  - Cannot edit doctor information
+  - Cannot delete anything
+
+#### Setup Granular Level Authorization
+- Create Permissions ENUM and Mapping to map Roles and Permissions
+- Update the current getAuthorities function of User entity to get ROLES + Permissions
+```java
+public Collection<? extends GrantedAuthority> getAuthorities() {Set<SimpleGrantedAuthority> authorities = new HashSet<>();
+        roles.forEach(role -> {
+            Set<SimpleGrantedAuthority> permissions = RolePermissionMapping.getAuthoritiesForRole(role);
+            authorities.addAll(permissions);
+            authorities.add(new SimpleGrantedAuthority("ROLE_"+role.name()));
+        });
+        return authorities;
+    }
+```
+- **Way 1** :
+  - In `WebSecurityConfig.java` need to add new requestMatcher in `SecurityFilterChain`
+  ```java
+  public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
+    httpSecurity.requestMatchers(HttpMethod.DELETE, "/admin/**")
+        .hasAnyAuthority(
+                PermissionType.APPOINTMENT_DELETE.name(),
+                PermissionType.USER_MANAGER.name()
+        );
+  }
+  ```
+  - Here, when delete method of `/admin/**` route will be called, then it will first ensure user have `appointment:delete` or `user:manager` permission.
+
+- **Way 2** : 
+  - Enabled `@EnableMethodSecurity` this is mandatory to use PreAuthories
+    ```java
+    @EnableMethodSecurity
+    public class WebSecurityConfig {}
+    ```
+  - Use `@PreAuthorize` or `@Secured` to allow authority or role check before accessing any service / function.
+  - `@Secured(RoleName)` take only the list of roles, while `@PreAuthorize` take condition.
+    ```java
+    // AppointmentService.java
+    
+    @Secured("ROLE_PATIENT")
+    public AppointmentResponseDto createNewAppointment(CreateAppointmentRequestDto createAppointmentRequestDto) {}
+    
+    @PreAuthorize("hasAuthority('appointment:write') OR #doctorId == authentication.principal.id")
+    public Appointment reAssignAppointmentToAnotherDoctor(Long appointmentId, Long doctorId) {}
+    
+    @PreAuthorize("hasAnyRole('ADMIN','DOCTOR') OR #doctorId == authentication.principal.id")
+    public List<AppointmentResponseDto> getAllAppointmentsOfDoctor(Long doctorId) {}
+    ```
+
+
+## Extra
+
+### Postman Script
+- rather than using the jwt token copy pasting everytime for new request, you can use postman script and global/environment/collection variable to auto save and reuse that variable
+```javascript
+let response = pm.response.json(); 
+let token = response.jwt; 
+
+// Store the JWT token in the environment variables
+pm.environment.set("jwt", token); 
+
+// Store the user ID in the collection variables
+pm.collectionVariables.set("jwt", token); 
+```
+- and use variable anywhere required as : `{{jwt}}` 

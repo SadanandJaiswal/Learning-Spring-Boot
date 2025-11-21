@@ -2,9 +2,13 @@ package com.codingshuttle.youtube.hospitalManagement.security;
 
 import com.codingshuttle.youtube.hospitalManagement.dto.LoginRequestDto;
 import com.codingshuttle.youtube.hospitalManagement.dto.LoginResponseDto;
+import com.codingshuttle.youtube.hospitalManagement.dto.SignupRequestDto;
 import com.codingshuttle.youtube.hospitalManagement.dto.SignupResponseDto;
+import com.codingshuttle.youtube.hospitalManagement.entity.Patient;
 import com.codingshuttle.youtube.hospitalManagement.entity.User;
 import com.codingshuttle.youtube.hospitalManagement.entity.type.AuthProviderType;
+import com.codingshuttle.youtube.hospitalManagement.entity.type.RoleType;
+import com.codingshuttle.youtube.hospitalManagement.repository.PatientRepository;
 import com.codingshuttle.youtube.hospitalManagement.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +23,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 
+import java.util.HashSet;
+import java.util.Set;
+
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -30,6 +37,9 @@ public class AuthService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private PatientRepository patientRepository;
 
     public LoginResponseDto login(LoginRequestDto loginRequestDto){
         Authentication authentication = authenticationManager.authenticate(
@@ -43,29 +53,40 @@ public class AuthService {
         return new LoginResponseDto(token, user.getId());
     }
 
-    public User signUpInternal(LoginRequestDto signupRequestDto, AuthProviderType authProviderType, String providerId){
+    public User signUpInternal(SignupRequestDto signupRequestDto, AuthProviderType authProviderType, String providerId){
         User user = userRepository.findByUsername(signupRequestDto.getUsername()).orElse(null);
 
         if(user!=null){
             throw new IllegalArgumentException("User with same username already exists");
         }
 
-        user =  userRepository.save(
-                User.builder()
-                        .username(signupRequestDto.getUsername())
-                        .providerType(authProviderType)
-                        .providerId(providerId)
-                        .build()
-        );
+        user =  User.builder()
+                .username(signupRequestDto.getUsername())
+                .providerType(authProviderType)
+                .providerId(providerId)
+//                        .roles(Set.of(RoleType.PATIENT))
+//                .roles(new HashSet<>(Set.of(RoleType.PATIENT)))
+                .roles(signupRequestDto.getRoles())
+                .build();
 
         if(authProviderType == AuthProviderType.EMAIL){
             user.setPassword(passwordEncoder.encode(signupRequestDto.getPassword()));
         }
 
-        return userRepository.save(user);
+        user = userRepository.save(user);
+
+        Patient patient = Patient.builder()
+                .name(signupRequestDto.getName())
+                .email(signupRequestDto.getUsername())
+                .user(user)
+                .build();
+
+        patientRepository.save(patient);
+
+        return  user;
     }
 
-    public SignupResponseDto signup(LoginRequestDto signupRequestDto) {
+    public SignupResponseDto signup(SignupRequestDto signupRequestDto) {
         User user = signUpInternal(signupRequestDto, AuthProviderType.EMAIL, null);
         return new SignupResponseDto(user.getId(), user.getUsername());
     }
@@ -80,13 +101,22 @@ public class AuthService {
 
         String email = oAuth2User.getAttribute("email");
 
+        String name = oAuth2User.getAttribute("name");
+
+        // Check if the provider is GitHub
+        if (authProviderType == AuthProviderType.GITHUB) {
+            name = oAuth2User.getAttribute("login");
+        }
+
+
+
         User userEmail = userRepository.findByUsername(email).orElse(null);
 
         // If user exists then login if not create new user
         if(user==null && userEmail==null){
             // signup flow
             String username = authUtil.determineUsernameFrom0Auth2User(oAuth2User,registrationId,providerId);
-            user = signUpInternal(new LoginRequestDto(username,null), authProviderType, providerId);
+            user = signUpInternal(new SignupRequestDto(username,null,name, new HashSet<>(Set.of(RoleType.PATIENT))), authProviderType, providerId);
         } else if (user != null) {
             // User already have account (logged in using OAuth)
 
